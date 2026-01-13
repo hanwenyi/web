@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guitar Fretboard Visualizer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 1000px;
+            width: 100%;
+            padding: 30px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 25px;
+            font-size: 14px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+            align-items: flex-end;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        label {
+            font-weight: 600;
+            color: #333;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        select {
+            padding: 10px 12px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            min-width: 150px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background-color: white;
+        }
+
+        select:hover {
+            border-color: #667eea;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.1);
+        }
+
+        select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        option {
+            padding: 8px;
+        }
+
+        option:disabled {
+            color: #999;
+        }
+
+        button {
+            padding: 10px 24px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 22px;
+        }
+
+        #displayBtn {
+            background-color: #667eea;
+            color: white;
+        }
+
+        #displayBtn:hover {
+            background-color: #5568d3;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        #displayBtn:active {
+            transform: scale(0.98);
+        }
+
+        #saveBtn {
+            background-color: #48bb78;
+            color: white;
+        }
+
+        #saveBtn:hover {
+            background-color: #38a169;
+            box-shadow: 0 4px 12px rgba(72, 187, 120, 0.3);
+        }
+
+        #saveBtn:active {
+            transform: scale(0.98);
+        }
+
+        .title-display {
+            text-align: center;
+            margin: 20px 0;
+            min-height: 32px;
+            font-size: 24px;
+            font-weight: 700;
+            color: #333;
+            font-family: 'Arial', sans-serif;
+        }
+
+        .canvas-container {
+            display: flex;
+            justify-content: center;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            overflow-x: auto;
+        }
+
+        canvas {
+            background-color: white;
+            border-radius: 4px;
+            display: block;
+        }
+
+        .info-section {
+            background-color: #f0f4ff;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            border-radius: 4px;
+            font-size: 13px;
+            color: #555;
+            margin-top: 20px;
+            line-height: 1.6;
+        }
+
+        .info-section h3 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        .info-section ul {
+            margin-left: 20px;
+        }
+
+        .info-section li {
+            margin-bottom: 6px;
+        }
+
+        /* Responsive design */
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+            }
+
+            h1 {
+                font-size: 22px;
+            }
+
+            .controls {
+                flex-direction: column;
+            }
+
+            .control-group {
+                width: 100%;
+            }
+
+            select {
+                width: 100%;
+            }
+
+            button {
+                width: 100%;
+            }
+
+            .canvas-container {
+                padding: 10px;
+            }
+        }
+
+        /* Chrome/Edge styling for select options */
+        select option {
+            padding: 8px 16px;
+            line-height: 1.5;
+            background-color: white;
+            color: black;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎸 Guitar Fretboard Visualizer</h1>
+        <p class="subtitle">Learn chords, scales, and note positions</p>
+
+        <div class="controls">
+            <div class="control-group">
+                <label for="noteSelect">Base Note</label>
+                <select id="noteSelect">
+                    <option value="">Select a note...</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label for="chordSelect">Chord / Scale</label>
+                <select id="chordSelect">
+                    <option value="">None (show notes only)</option>
+                </select>
+            </div>
+
+            <button id="displayBtn">Display</button>
+            <button id="saveBtn">Save Image</button>
+        </div>
+
+        <div class="title-display" id="title"></div>
+
+        <div class="canvas-container">
+            <canvas id="fretboardCanvas"></canvas>
+        </div>
+
+        <div class="info-section">
+            <h3>Semitone Color Mapping (Wavelength Model)</h3>
+            <div style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;">
+                <div style="display: flex; flex-direction: column; align-items: center;">
+                    <div style="width: 32px; height: 32px; border-radius: 50%; background: #ff0000; border: 1px solid #ccc;"></div>
+                    <span style="font-size: 13px; margin-top: 4px;">C</span>
+                </div>
+                <div style="display: flex; flex-direction: column; align-items: center;">
+                    <div style="width: 32px; height: 32px; border-radius: 50%; background: #ff2a00; border: 1px solid #ccc;"></div>
+                    <span style="font-size: 13px; margin-top: 4px;">C#</span>
+                </div>
+                <div style="display: flex; flex-direction: column; align-items: center;">
+                    <div style="width: 32px; height: 32px; border-radius: 50%; background: #ff5500; border: 1px solid #ccc;"></div>
+                    <span style="font-size: 13px; margin-top: 4px;">D</span>
+                </div>
+                <div style="display: flex; flex-direction: column; align-items: center;">
+                    <div style="width: 32px; height: 32px; border-radius: 50%; background: #ff8000; border: 1px solid #ccc;"></div>
+                    <span style="font-size: 13px; margin-top: 4px;">D#</span>
+                </div>
+                <div style="display: flex; flex-direction: column; align-items: center;">
+                    <div style="width: 32px; height: 32px; border-radius: 50%; background: #ffab00; border: 1px solid #ccc;"></div>
+                    <span style="font-size: 13px; margin-top: 4px;">E</span>
+                </div>
+                <div style="display: flex; flex-direction: column; align-items: center;">
+                    <div style="width: 32px; height: 32px; border-radius: 50%; background: #ffd600; border: 1px solid #ccc;"></div>
+                    <span style="font-size: 13px; margin-top: 4px;">F</span>
+                </div>
+                <div style="display: flex; flex-direction: column; align-items: center;">
+                    <div style="width: 32px; height: 32px; border-radius: 50%; background: #eaff00; border: 1px solid #ccc;"></div>
+                    <span style="font-size: 13px; margin-top: 4px;">F#</span>
+                </div>
+                <div style="display: flex; flex-direction: column; align-items: center;">
+                    <div style="width: 32px; height: 32px; border-radius: 50%; background: #b5ff00; border: 1px solid #ccc;"></div>
+                    <span style="font-size: 13px; margin-top: 4px;">G</span>
+                </div>
+                <div style="display: flex; flex-direction: column; align-items: center;">
+                    <div style="width: 32px; height: 32px; border-radius: 50%; background: #00ff80; border: 1px solid #ccc;"></div>
+                    <span style="font-size: 13px; margin-top: 4px;">G#</span>
+                </div>
+                <div style="display: flex; flex-direction: column; align-items: center;">
+                    <div style="width: 32px; height: 32px; border-radius: 50%; background: #00ffd6; border: 1px solid #ccc;"></div>
+                    <span style="font-size: 13px; margin-top: 4px;">A</span>
+                </div>
+                <div style="display: flex; flex-direction: column; align-items: center;">
+                    <div style="width: 32px; height: 32px; border-radius: 50%; background: #00aaff; border: 1px solid #ccc;"></div>
+                    <span style="font-size: 13px; margin-top: 4px;">A#</span>
+                </div>
+                <div style="display: flex; flex-direction: column; align-items: center;">
+                    <div style="width: 32px; height: 32px; border-radius: 50%; background: #0055ff; border: 1px solid #ccc;"></div>
+                    <span style="font-size: 13px; margin-top: 4px;">B</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="info-section">
+            <h3>How to use:</h3>
+            <ul>
+                <li>Select a base note (root note of the chord or scale)</li>
+                <li>Choose a chord type or scale from the dropdown</li>
+                <li>Click "Display" to visualize the notes on the fretboard</li>
+                <li>Click "Save Image" to download the fretboard as a PNG</li>
+                <li>Notes color using wavelength-based mapping from red to violet</li>
+            </ul>
+        </div>
+    </div>
+
+    <script src="draw_fret.js"></script>
+</body>
+</html>
