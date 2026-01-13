@@ -4,15 +4,27 @@ const numStrings = 6;
 
 // Standard tuning EADGBE (ordered top-to-bottom to match the Python GUI: high E -> B -> G -> D -> A -> low E)
 const stringNames = ['E', 'B', 'G', 'D', 'A', 'E'];
-// semitone offsets corresponding to the above (high-to-low)
-const stringSemitones = [24, 19, 15, 10, 5, 0];
 
 const noteSequence = ['E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B', 'C', 'C#', 'D', 'D#'];
 
-// Note dot color
-const dotColor = 'darkgreen';
-// Convert darkgreen to hex
-const dotColorHex = '#006400';
+// Wavelength-based color mapping for semitones
+// Map C (lowest) to 700nm (red), B (highest) to 400nm (violet)
+// Static wavelength-based color mapping for semitones
+const wavelengthColorMap = {
+    'C':  '#ff0000', // 700nm
+    'C#': '#ff2a00', // 675nm
+    'D':  '#ff5500', // 650nm
+    'D#': '#ff8000', // 625nm
+    'E':  '#ffab00', // 600nm
+    'F':  '#ffd600', // 575nm
+    'F#': '#eaff00', // 550nm
+    'G':  '#b5ff00', // 525nm
+    'G#': '#00ff80', // 500nm
+    'A':  '#00ffd6', // 475nm
+    'A#': '#00aaff', // 450nm
+    'B':  '#0055ff'  // 425nm
+};
+
 
 // Fret positioning (equal spacing)
 const fretSpacing = 40; // Spacing between frets in pixels
@@ -112,19 +124,6 @@ function getChordIntervals(chordName) {
     return chordTypes[chordName] || null;
 }
 
-// Helper function to lighten color
-function lightenColor(hexColor, fraction) {
-    // fraction: 0.0 -> original, 1.0 -> white
-    const r = parseInt(hexColor.slice(1, 3), 16);
-    const g = parseInt(hexColor.slice(3, 5), 16);
-    const b = parseInt(hexColor.slice(5, 7), 16);
-    
-    const newR = Math.round(r + (255 - r) * fraction);
-    const newG = Math.round(g + (255 - g) * fraction);
-    const newB = Math.round(b + (255 - b) * fraction);
-    
-    return `#${newR.toString(16).padStart(2, '0')}${newG.toString(16).padStart(2, '0')}${newB.toString(16).padStart(2, '0')}`;
-}
 
 // Draw the fretboard on canvas
 function drawFretboard(ctx, offsetX = 20, offsetY = 20) {
@@ -237,38 +236,34 @@ function drawNotes(ctx, note, chord = '', offsetX = 20, offsetY = 20) {
     for (let stringIdx = 0; stringIdx < numStrings; stringIdx++) {
         const openNote = stringNames[stringIdx];
         const openNoteIdx = noteSequence.indexOf(openNote);
-        
         for (let fret = 0; fret <= numFrets; fret++) {
             const currentNoteIdx = openNoteIdx + fret;
             // Ensure a non-negative remainder (JS % can be negative for negative operands)
             const semitoneDistance = ((currentNoteIdx - noteIdx) % 12 + 12) % 12;
-            
             let drawDot = false;
-            let amount = 0;
-            
+            let intervalIdx = 0;
             if (intervals.length > 0) {
                 const index = intervals.indexOf(semitoneDistance);
                 if (index !== -1) {
                     drawDot = true;
-                    amount = Math.min(0.8, 0.2 * index);
+                    intervalIdx = index;
                 }
             } else {
                 const currentNote = noteSequence[currentNoteIdx % 12];
                 if (currentNote === note) {
                     drawDot = true;
-                    amount = 0.0;
+                    intervalIdx = 0;
                 }
             }
-            
             if (drawDot) {
                 const xPos = offsetX + fretPositions[fret];
                 const yPos = offsetY + stringIdx * stringSpacing;
-                
-                const noteColor = lightenColor(dotColorHex, amount);
-                
+                // Use wavelength-based color model for every note dot
+                const noteName = noteSequence[currentNoteIdx % 12];
+                const noteColor = wavelengthColorMap[noteName] || dotColorHex;
                 ctx.fillStyle = noteColor;
                 ctx.beginPath();
-                ctx.arc(xPos, yPos, 4, 0, Math.PI * 2);
+                ctx.arc(xPos, yPos, 8, 0, Math.PI * 2);
                 ctx.fill();
             }
         }
