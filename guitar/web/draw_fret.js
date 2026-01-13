@@ -107,7 +107,7 @@ const chordTypesNested = {
         "Pentatonic Major": [0, 2, 4, 7, 9],
         "Pentatonic Minor": [0, 3, 5, 7, 10],
         "Blues Scale": [0, 3, 5, 6, 7, 10],
-        "Japanese Scale": [0, 2, 5, 7, 9]
+        "Japanese Scale": [0, 2, 3, 7, 8]
     }
 };
 
