@@ -107,7 +107,7 @@ const chordTypesNested = {
         "Pentatonic Major": [0, 2, 4, 7, 9],
         "Pentatonic Minor": [0, 3, 5, 7, 10],
         "Blues Scale": [0, 3, 5, 6, 7, 10],
-        "Japanese Scale": [0, 2, 3, 7, 8]
+        "Japanese Scale (hirajoushi)": [0, 2, 3, 7, 8]
     }
 };
 
@@ -301,10 +301,8 @@ document.addEventListener('DOMContentLoaded', function() {
     chordList.forEach(display => {
         const option = document.createElement('option');
         option.value = display;
-        option.textContent = display;
-        if (display.startsWith('  ')) {
-            option.style.paddingLeft = '20px';
-        }
+        // Use non-breaking spaces for indentation in dropdown options
+        option.textContent = display.startsWith('  ') ? '\u00A0\u00A0\u00A0\u00A0' + display.trim() : display;
         chordSelect.appendChild(option);
     });
     
