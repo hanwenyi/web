@@ -207,38 +207,39 @@ function drawFretboard(ctx, offsetX = 20, offsetY = 20) {
     }
 }
 
-// Draw notes on the fretboard
+// Store note dot positions for click detection
+let noteDotPositions = [];
+
+// Draw notes on the fretboard and record their positions
 function drawNotes(ctx, note, chord = '', offsetX = 20, offsetY = 20) {
     drawFretboard(ctx, offsetX, offsetY);
-    
+    noteDotPositions = [];
     if (!note) {
         return;
     }
-    
     const chordIntervals = getChordIntervals(chord);
-    
     if (chord && !chordIntervals) {
         console.warn(`Chord '${chord}' not recognized. Showing note only.`);
     }
-    
     // Prepare intervals if chord provided
     let intervals = [];
     if (chordIntervals) {
         intervals = chordIntervals.map(i => i % 12);
     }
-    
     const noteIdx = noteSequence.indexOf(note);
     if (noteIdx === -1) {
         console.error(`Note '${note}' not found in note sequence`);
         return;
     }
-    
     for (let stringIdx = 0; stringIdx < numStrings; stringIdx++) {
+        // Custom tuning: open string octaves E6, B6, G5, D5, A4, E4 (1st to 6th string)
+        // stringNames = ['E', 'B', 'G', 'D', 'A', 'E']
+        const stringOctaves = [6, 5, 5, 5, 4, 4];
         const openNote = stringNames[stringIdx];
         const openNoteIdx = noteSequence.indexOf(openNote);
+        const baseOctave = stringOctaves[stringIdx] || 4;
         for (let fret = 0; fret <= numFrets; fret++) {
             const currentNoteIdx = openNoteIdx + fret;
-            // Ensure a non-negative remainder (JS % can be negative for negative operands)
             const semitoneDistance = ((currentNoteIdx - noteIdx) % 12 + 12) % 12;
             let drawDot = false;
             let intervalIdx = 0;
@@ -258,14 +259,73 @@ function drawNotes(ctx, note, chord = '', offsetX = 20, offsetY = 20) {
             if (drawDot) {
                 const xPos = offsetX + fretPositions[fret];
                 const yPos = offsetY + stringIdx * stringSpacing;
-                // Use wavelength-based color model for every note dot
                 const noteName = noteSequence[currentNoteIdx % 12];
                 const noteColor = wavelengthColorMap[noteName] || dotColorHex;
                 ctx.fillStyle = noteColor;
                 ctx.beginPath();
                 ctx.arc(xPos, yPos, 8, 0, Math.PI * 2);
                 ctx.fill();
+                // Calculate octave using standard musical notation where C=0
+                // Convert note sequence index to standard music index (C=0, C#=1, ..., B=11)
+                // The noteSequence starts at E (index 0), so standard index = (index + 4) % 12
+                const standardOpenNoteIdx = (openNoteIdx + 4) % 12;
+                const octave = baseOctave + Math.floor((standardOpenNoteIdx + fret) / 12);
+                noteDotPositions.push({ x: xPos, y: yPos, r: 8, note: noteName, octave });
             }
+        }
+    }
+}
+// --- Note sound playback ---
+const noteFrequencies = {
+    'C': 261.63,
+    'C#': 277.18,
+    'Db': 277.18,
+    'D': 293.66,
+    'D#': 311.13,
+    'Eb': 311.13,
+    'E': 329.63,
+    'F': 349.23,
+    'F#': 369.99,
+    'Gb': 369.99,
+    'G': 392.00,
+    'G#': 415.30,
+    'Ab': 415.30,
+    'A': 440.00,
+    'A#': 466.16,
+    'Bb': 466.16,
+    'B': 493.88
+};
+
+function playNote(note, octave = 4, duration = 0.6) {
+    let freq = noteFrequencies[note];
+    if (!freq) return;
+    freq = freq * Math.pow(2, octave - 4);
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.value = freq;
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    gain.gain.setValueAtTime(0.2, ctx.currentTime);
+    osc.start();
+    osc.stop(ctx.currentTime + duration);
+    osc.onended = () => ctx.close();
+    gain.gain.linearRampToValueAtTime(0, ctx.currentTime + duration);
+}
+
+// --- Canvas click handler ---
+function handleCanvasClick(e) {
+    const canvas = e.target;
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    for (const dot of noteDotPositions) {
+        const dx = x - dot.x;
+        const dy = y - dot.y;
+        if (dx * dx + dy * dy <= dot.r * dot.r) {
+            playNote(dot.note, dot.octave);
+            break;
         }
     }
 }
@@ -318,6 +378,8 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Draw initial blank fretboard
     drawFretboard(ctx, offsetX, offsetY);
+    // Add click handler for note playback
+    canvas.addEventListener('click', handleCanvasClick);
     
     // Display button handler
     const displayBtn = document.getElementById('displayBtn');
@@ -325,18 +387,13 @@ document.addEventListener('DOMContentLoaded', function() {
         const note = noteSelect.value;
         const chordDisplay = chordSelect.value;
         const chord = displayToChord[chordDisplay] || '';
-        
         if (!note) {
             alert('Please select a base note');
             return;
         }
-        
         try {
-            // Clear canvas
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             drawNotes(ctx, note, chord, offsetX, offsetY);
-            
-            // Update title
             const titleElement = document.getElementById('title');
             titleElement.textContent = chord ? `${note} ${chord}` : note;
         } catch (error) {
